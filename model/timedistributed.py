@@ -1,10 +1,10 @@
 from keras.engine import InputSpec
 from keras import backend as K
-from keras.layers import Wrapper
 from keras.models import Model
+from keras.layers import Layer
 
 
-class TimeDistributedMultiInput(Wrapper):
+class TimeDistributedMultiInput(Layer):
     """This wrapper allows to apply a layer to every
     temporal slice of an input.
     The input should be at least 3D,
@@ -39,7 +39,8 @@ class TimeDistributedMultiInput(Wrapper):
     def __init__(self, layer, mask=None, **kwargs):
         self.supports_masking = True
         self.mask = mask
-        super(TimeDistributedMultiInput, self).__init__(layer, **kwargs)
+        self.layer = layer
+        super(TimeDistributedMultiInput, self).__init__(**kwargs)
 
     def build(self, input_shape):
         if type(input_shape) != list:

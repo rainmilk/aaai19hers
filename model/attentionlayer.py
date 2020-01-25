@@ -71,13 +71,13 @@ class Attention(ISRAttentionLayer):
     def build(self, input_shape):
         assert len(input_shape) == 3
 
-        self.W = self.add_weight((input_shape[-1],),
+        self.W = self.add_weight(shape=(input_shape[-1],),
                                  initializer=self.init,
                                  name='{}_W'.format(self.name),
                                  regularizer=self.W_regularizer,
                                  constraint=self.W_constraint)
         if self.bias:
-            self.b = self.add_weight((1,),
+            self.b = self.add_weight(shape=(1,),
                                      initializer='zero',
                                      name='{}_b'.format(self.name),
                                      regularizer=self.b_regularizer,
@@ -151,7 +151,7 @@ class TwoLayerAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_mid = self.add_weight((self.mid_units,),
+            self.b_mid = self.add_weight(shape=(self.mid_units,),
                                          initializer='zero',
                                          name='b_mid',
                                          regularizer=self.kernel_regularizer,
@@ -163,7 +163,7 @@ class TwoLayerAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_out = self.add_weight((1,),
+            self.b_out = self.add_weight(shape=(1,),
                                          initializer='zero',
                                          name='b_out',
                                          regularizer=self.kernel_regularizer,
@@ -330,7 +330,7 @@ class PairAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_mid = self.add_weight((self.mid_units,),
+            self.b_mid = self.add_weight(shape=(self.mid_units,),
                                          initializer='zero',
                                          name='b_mid',
                                          regularizer=self.kernel_regularizer,
@@ -342,7 +342,7 @@ class PairAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_out = self.add_weight((1,),
+            self.b_out = self.add_weight(shape=(1,),
                                          initializer='zero',
                                          name='b_out',
                                          regularizer=self.kernel_regularizer,
@@ -449,7 +449,7 @@ class GatedAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_mid = self.add_weight((self.mid_units,),
+            self.b_mid = self.add_weight(shape=(self.mid_units,),
                                          initializer='zero',
                                          name='b_mid',
                                          regularizer=self.kernel_regularizer,
@@ -461,7 +461,7 @@ class GatedAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_out = self.add_weight((1,),
+            self.b_out = self.add_weight(shape=(1,),
                                          initializer='zero',
                                          name='b_out',
                                          regularizer=self.kernel_regularizer,
@@ -543,7 +543,7 @@ class AggGatedAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_mid = self.add_weight((self.mid_units,),
+            self.b_mid = self.add_weight(shape=(self.mid_units,),
                                          initializer='zero',
                                          name='b_mid',
                                          regularizer=self.kernel_regularizer,
@@ -555,7 +555,7 @@ class AggGatedAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_out = self.add_weight((1,),
+            self.b_out = self.add_weight(shape=(1,),
                                          initializer='zero',
                                          name='b_out',
                                          regularizer=self.kernel_regularizer,

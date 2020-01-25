@@ -8,7 +8,7 @@ def cn_scores(G,from_node,to_node):
     return score
 
 def score_connection(from_rep, to_rep, score_model):
-    return score_model.predict_aspect_scores([from_rep, to_rep])
+    return score_model.predict([from_rep, to_rep])
 
 
 def test_recommendation(user_rep, item_rep, score_model, test_path, neg_test_path):
