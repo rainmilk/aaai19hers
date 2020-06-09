@@ -1,11 +1,15 @@
 import numpy as np
 import math
-from data_utilities import split_negative_test
+from model.data_utilities import split_negative_test
 from sklearn.utils import shuffle
-from graph_utilities import read_graph
+from model.graph_utilities import read_graph
 import random
 import csv
 import networkx as nx
+
+
+data_path = "datasets/book/"
+
 
 def network_statistic(data_path):
 
@@ -17,15 +21,15 @@ def network_statistic(data_path):
 
 def construct_train(data_name):
     test_ratio=0.2
-    ui_data_path="networkRS/%s_rating.txt"%(data_name)
+    ui_data_path = data_path + "%s_rating.txt"%(data_name)
     ui_data=np.loadtxt(ui_data_path,dtype=np.int32)
 
     ui_data=shuffle(ui_data)
     edge_num=len(ui_data)
     test_ui= ui_data[:math.ceil(test_ratio*edge_num),]
     train_ui = ui_data[math.ceil(test_ratio*edge_num):,]
-    train_path="networkRS/%s_rating_train.txt"%(data_name)
-    test_path="networkRS/%s_rating_test.txt"%(data_name)
+    train_path = data_path + "%s_rating_train.txt"%(data_name)
+    test_path = data_path + "%s_rating_test.txt"%(data_name)
     neg_path = "networkRS/%s_rating_test_neg.csv"%(data_name)
 
     np.savetxt(train_path,train_ui)
@@ -42,8 +46,8 @@ def construct_train(data_name):
 
 def construct_cold_user():
     name='lastfm'
-    user_path="networkRS/%s_userNet.txt"%name
-    rating_path="networkRS/%s_rating.txt"%name
+    user_path = data_path + "%s_userNet.txt"%name
+    rating_path = data_path + "%s_rating.txt"%name
     neg_path= "networkRS/%s_rating_test_cold_user_neg.txt"%name
     train_path = "networkRS/%s_rating_train_cold_user.txt"%name
     test_path = "networkRS/%s_rating_test_cold_user.txt"%name
@@ -84,10 +88,10 @@ def construct_cold_user():
     return True
 
 def construct_cold_item(name):
-    rating_path="networkRS/%s_rating.txt"%name
-    neg_path= "networkRS/%s_rating_test_cold_item_neg.txt"%name
-    train_path = "networkRS/%s_rating_train_cold_item.txt"%name
-    test_path = "networkRS/%s_rating_test_cold_item.txt"%name
+    rating_path = data_path + "%s_rating.txt"%name
+    neg_path = data_path + "%s_rating_test_cold_item_neg.txt"%name
+    train_path = data_path + "%s_rating_train_cold_item.txt"%name
+    test_path = data_path + "%s_rating_test_cold_item.txt"%name
     rating=np.loadtxt(rating_path,dtype=np.int32)
     # G_item=read_graph(item_path)
     # item_list=list(G_item.nodes())
@@ -238,8 +242,8 @@ def get_attention_graph_RS(model, G_u, G_i, edge, topK, att_graph_path, order=2)
 #
 # data_name='lastfm'
 # construct_cold_item(data_name)
-# data_name='book'
-# construct_cold_item(data_name)
+data_name='book'
+construct_cold_item(data_name)
 # user_net_path='networkRS/%s_userNet.txt'%data_name
 # data_path = 'networkRS/%s_rating.txt' % data_name
 #item_path = 'networkRS/%s_itemNet.txt'%data_name
