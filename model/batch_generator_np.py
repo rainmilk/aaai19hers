@@ -35,11 +35,11 @@ class BaseGenerator(object):
                     break
         return target_batch, positive_batch, negative_batch
 
-    def get_batch_data_sample_k(self, batch_node, topK=50, excluded_node_batch=None):
+    def get_batch_data_sample_k(self, batch_node, topK=50, excluded_node_batch=None, order=2):
         if not isinstance(batch_node, list): batch_node = [batch_node]
         batch_size = len(batch_node)
         first_batch_data = np.zeros([batch_size, topK], dtype=np.int32)
-        second_batch_data = np.zeros([batch_size, topK, topK], dtype=np.int32)
+        second_batch_data = None
         for i in range(batch_size):
             target = batch_node[i]
             first_neighbors = set(self.neighbors(target))
@@ -50,33 +50,45 @@ class BaseGenerator(object):
                 first_neighbors = random.sample(first_neighbors, topK)
             first_batch_data[i, :len(first_neighbors)] = first_neighbors
 
-            for j, first_node in enumerate(first_neighbors):
-                child_nodes = list(self.neighbors(first_node))
-                if len(child_nodes) > topK:
-                    child_nodes = random.sample(child_nodes, topK)
-                second_batch_data[i,j,:len(child_nodes)] = child_nodes
+            if order > 1:
+                second_batch_data = np.zeros([batch_size, topK, topK], dtype=np.int32)
+                for j, first_node in enumerate(first_neighbors):
+                    child_nodes = list(self.neighbors(first_node))
+                    if len(child_nodes) > topK:
+                        child_nodes = random.sample(child_nodes, topK)
+                    second_batch_data[i,j,:len(child_nodes)] = child_nodes
+
         return first_batch_data, second_batch_data
 
-    def get_batch_data_topk(self, batch_node, topK=50, excluded_node_batch=None, predict_batch_size=100):
-        if not isinstance(batch_node, list): batch_node = [batch_node]
-        batch_size = len(batch_node)
-        embedding_layer = self.model.second_model.get_layer('node_embedding')
+    def get_node_embed(self):
+        return self.model.second_model.get_layer('node_embedding')
 
-        embeddings = embedding_layer.get_weights()[0]
+    def get_first_layer_weight(self):
         attention_layer = self.model.subgraph_model.get_layer("attention_first")
         attention_mid_wt = attention_layer.get_weights()[0]
         attention_out_wt = attention_layer.get_weights()[1]
         attention_mid_b = attention_layer.get_weights()[2]
         attention_out_b = attention_layer.get_weights()[3]
+        return attention_mid_wt, attention_mid_b, attention_out_wt, attention_out_b
 
+    def get_second_layer_weight(self):
         attention_layer_second = self.model.second_model.get_layer("attention_second")
-        attention_mid_wt_second = attention_layer_second.get_weights()[0]
-        attention_out_wt_second = attention_layer_second.get_weights()[1]
-        attention_mid_b_second = attention_layer_second.get_weights()[2]
-        attention_out_b_second = attention_layer_second.get_weights()[3]
+        attention_mid_wt = attention_layer_second.get_weights()[0]
+        attention_out_wt = attention_layer_second.get_weights()[1]
+        attention_mid_b = attention_layer_second.get_weights()[2]
+        attention_out_b = attention_layer_second.get_weights()[3]
+        return attention_mid_wt, attention_mid_b, attention_out_wt, attention_out_b
+
+    def get_batch_data_topk(self, batch_node, topK=50, excluded_node_batch=None, predict_batch_size=100, order=2):
+        if not isinstance(batch_node, list): batch_node = [batch_node]
+        batch_size = len(batch_node)
+
+        embeddings = self.get_node_embed()
+        attention_mid_wt, attention_out_wt,  attention_mid_b, attention_out_b = self.get_first_layer_weight()
+        attention_mid_wt_second, attention_out_wt_second, attention_mid_b_second, attention_out_b_second = self.get_second_layer_weight()
 
         first_batch_data = np.zeros([batch_size, topK], dtype=np.int32)
-        second_batch_data = np.zeros([batch_size, topK, topK], dtype=np.int32)
+        second_batch_data = None
         for i in range(batch_size):
             target = batch_node[i]
             node_dict =  self.node_cache.get(target)
@@ -88,43 +100,30 @@ class BaseGenerator(object):
                 if excluded_node_batch is not None: first_neighbors.discard(excluded_node_batch[i])
                 first_neighbors = list(first_neighbors)
                 nb_first_node = len(first_neighbors)
-                if nb_first_node > topK:
-                    second_inputs = np.zeros([nb_first_node, topK])
-                for j, first_node in enumerate(first_neighbors):
-                    child_nodes = list(self.neighbors(first_node))
-                    top_k_nodes = child_nodes
-                    if len(child_nodes) > topK:
-                        second_neighbors_embedding = embeddings[child_nodes]
-                        first_repeat = np.repeat(np.expand_dims(embeddings[first_node], 0), len(child_nodes), axis=0)
-                        attention_vectors = np.concatenate([second_neighbors_embedding, first_repeat], axis=-1)
-                        hid_units = np.tanh(np.dot(attention_vectors, attention_mid_wt_second) + attention_mid_b_second)
-                        attention_values = np.dot(hid_units, attention_out_wt_second) + attention_out_b_second
-
-                        top_k_nodes_index = np.argpartition(-attention_values, topK)[:topK]
-                        top_k_nodes = [child_nodes[m] for m in top_k_nodes_index]
-                        if nb_first_node > topK:
-                            second_inputs[j, :len(top_k_nodes)] = top_k_nodes
-                    prune_list[first_node] = top_k_nodes
 
                 if nb_first_node > topK:
-                    target_input = np.array([target]).repeat(nb_first_node)
-                    first_input = np.array(first_neighbors)
-                    first_memory = self.model.second_model.predict_aspect_scores([target_input, first_input, second_inputs],
-                                                                                 batch_size=predict_batch_size)
-                    target_embedding = np.repeat(target_embedding, nb_first_node, axis=0)
-                    attention_vectors = np.concatenate([first_memory, target_embedding], axis=-1)
-                    hid_units = np.tanh(np.dot(attention_vectors, attention_mid_wt) + attention_mid_b)
+                    first_memory = embeddings[first_neighbors]
+                    hid_units = np.tanh(np.dot(first_memory, attention_mid_wt) + attention_mid_b)
                     scores = np.dot(hid_units, attention_out_wt) + attention_out_b
-
                     first_neighbors = [first_neighbors[m] for m in np.argpartition(-scores, topK)[:topK]]
 
                 first_batch_data[i, :nb_first_node] = first_neighbors
-                node_dict = {n:prune_list[n] for n in first_neighbors}
-                self.node_cache[target] = node_dict
 
-            for j, (k, v) in enumerate(node_dict.items()):
-                first_batch_data[i, j] = k
-                second_batch_data[i, j, :len(v)] = v
+                if order > 1:
+                    second_batch_data = np.zeros([batch_size, topK, topK], dtype=np.int32)
+                    for j, first_node in enumerate(first_neighbors):
+                        child_nodes = list(self.neighbors(first_node))
+                        top_k_nodes = child_nodes
+                        if len(child_nodes) > topK:
+                            second_neighbors_embedding = embeddings[child_nodes]
+                            # first_repeat = np.repeat(np.expand_dims(embeddings[first_node], 0), len(child_nodes), axis=0)
+                            # attention_vectors = np.concatenate([second_neighbors_embedding, first_repeat], axis=-1)
+                            hid_units = np.tanh(np.dot(second_neighbors_embedding, attention_mid_wt_second) + attention_mid_b_second)
+                            attention_values = np.dot(hid_units, attention_out_wt_second) + attention_out_b_second
+
+                            top_k_nodes_index = np.argpartition(-attention_values, topK)[:topK]
+                            top_k_nodes = [child_nodes[m] for m in top_k_nodes_index]
+                            second_batch_data[i, j, :len(top_k_nodes)] = top_k_nodes
 
         return first_batch_data, second_batch_data
 

@@ -242,8 +242,8 @@ def get_attention_graph_RS(model, G_u, G_i, edge, topK, att_graph_path, order=2)
 #
 # data_name='lastfm'
 # construct_cold_item(data_name)
-data_name='book'
-construct_cold_item(data_name)
+# data_name='book'
+# construct_cold_item(data_name)
 # user_net_path='networkRS/%s_userNet.txt'%data_name
 # data_path = 'networkRS/%s_rating.txt' % data_name
 #item_path = 'networkRS/%s_itemNet.txt'%data_name

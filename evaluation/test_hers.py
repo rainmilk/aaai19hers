@@ -148,7 +148,7 @@ pretrain_model.contrast_model.summary()
 pretrain_samples = 3
 pretrain_batch_sz = 200
 pretrain_batch_num = math.ceil(num_edges / pretrain_batch_sz)
-pretrain_iter = 5
+pretrain_iter = 3
 
 for i in range(pretrain_iter):
     shuffle(edges)
@@ -177,8 +177,10 @@ model = NetworkRS(user_size, item_size, embed_len, score_model,
                   user_mask=None)
 model.triplet_model.compile(loss=loss, optimizer='adam')
 model.triplet_model.summary()
-model.user_embed.set_weights(pretrain_model.user_emb.get_weights())
-model.item_embed.set_weights(pretrain_model.item_emb.get_weights())
+
+if pretrain_iter > 0:
+    model.user_embed.set_weights(pretrain_model.user_emb.get_weights())
+    model.item_embed.set_weights(pretrain_model.item_emb.get_weights())
 
 
 batchGenerator = TripletGenerator(G_user, model, G_ui, G_item)
@@ -213,7 +215,7 @@ for i in range(max_iter):
             train_loss += train_loss_temp
 
             if (j + 1) % 100 == 0:
-                print("Training on batch %d/%d sample %d and iter %d on dataset %s" % (j + 1, batch_num, s + 1, i + 1,data_name))
+                print("Training on batch %d/%d sample %d and iter %d on dataset %s" % (j + 1, batch_num, s + 1, i + 1, data_name))
     print("Finish iteration %d/%d with loss: %f" % (i + 1, max_iter, train_loss / (batch_num * spl)))
 
     batchGenerator.clear_node_cache()
@@ -229,10 +231,11 @@ for i in range(max_iter):
     #test_recommendation(item_rep, user_rep, test_path, neg_test_path)  # for cold start item
 
 #
-# att_graph_path="networkRS/%s_att_graph.csv"%data_name
+# from model.construct_RS_train import get_attention_graph_RS
+# att_graph_path="./%s_att_graph.csv"%data_name
 # edge=[41,2589]
 # get_attention_graph_RS(model, G_user, G_item, edge, topK, att_graph_path, order=2)
-#
-# model_save_path="networkRS/%s_model.h5"%data_name
+
+# model_save_path="./%s_model.h5"%data_name
 # model.triplet_model.save(model_save_path)
 # print("save triplet model successfully")
